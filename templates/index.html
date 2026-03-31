@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Учет платежей клиентов</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 24px auto; max-width: 1100px; }
+    .card { border: 1px solid #ddd; border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+    .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    label { font-size: 14px; color: #333; }
+    input, select, button { padding: 8px; font-size: 14px; }
+    button { cursor: pointer; }
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    th, td { border: 1px solid #e2e2e2; padding: 8px; text-align: left; }
+    th { background: #f8f8f8; }
+    .muted { color: #777; font-size: 13px; }
+    .ok { background: #e7f7ea; border: 1px solid #bce5c5; padding: 10px; border-radius: 8px; margin-bottom: 12px; }
+    .err { background: #fdeaea; border: 1px solid #f3c0c0; padding: 10px; border-radius: 8px; margin-bottom: 12px; }
+    .report { background: #eef4ff; border: 1px solid #cddcff; padding: 12px; border-radius: 8px; }
+  </style>
+</head>
+<body>
+  <h1>Учет платежей клиентов</h1>
+
+  {% with msgs = get_flashed_messages(with_categories=true) %}
+    {% if msgs %}
+      {% for category, msg in msgs %}
+        <div class="{{ 'ok' if category == 'success' else 'err' }}">{{ msg }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <div class="card">
+    <h3>Клиенты</h3>
+    <div class="row">
+      <form method="get" action="{{ url_for('index') }}">
+        <label>Клиент:</label>
+        <select name="client_id" onchange="this.form.submit()">
+          <option value="">-- Выберите клиента --</option>
+          {% for c in clients %}
+            <option value="{{ c['id'] }}" {% if selected_client_id == c['id'] %}selected{% endif %}>{{ c['name'] }}</option>
+          {% endfor %}
+        </select>
+      </form>
+
+      <form method="post" action="{{ url_for('add_client_route') }}" class="row">
+        <label for="client_name">Новый клиент:</label>
+        <input id="client_name" name="client_name" placeholder="Имя клиента">
+        <button type="submit">Добавить клиента</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Добавление платежа</h3>
+    <form method="post" action="{{ url_for('add_payment_route') }}" class="row">
+      <input type="hidden" name="client_id" value="{{ selected_client_id or '' }}">
+
+      <label>Дата (YYYY-MM-DD)</label>
+      <input name="date" value="{{ today }}" required>
+
+      <label>Сумма (руб)</label>
+      <input name="amount" placeholder="1000.00" required>
+
+      <label>Комиссия (%)</label>
+      <input name="commission_percent" placeholder="5" required>
+
+      <label>Статус</label>
+      <input name="status" placeholder="Оплачен">
+
+      <label>Успешность</label>
+      <select name="success">
+        <option value=""></option>
+        {% for value in success_values %}
+          <option value="{{ value }}">{{ value }}</option>
+        {% endfor %}
+      </select>
+
+      <button type="submit">Добавить платеж</button>
+    </form>
+    <p class="muted">Если у клиента уже есть платежи в эту дату, комиссия подставляется автоматически из существующих записей.</p>
+  </div>
+
+  <div class="card">
+    <h3>Платежи выбранного клиента</h3>
+    {% if selected_client_id %}
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Дата</th>
+            <th>Сумма</th>
+            <th>Действие</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in payments %}
+            <tr>
+              <td>{{ p['id'] }}</td>
+              <td>{{ p['date'] }}</td>
+              <td>{{ p['amount'] }}</td>
+              <td>
+                <form method="post" action="{{ url_for('delete_payment_route', payment_id=p['id']) }}" onsubmit="return confirm('Удалить платеж ID={{ p['id'] }}?')">
+                  <input type="hidden" name="client_id" value="{{ selected_client_id }}">
+                  <button type="submit">Удалить</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+          {% if not payments %}
+            <tr><td colspan="4">Нет платежей.</td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="muted">Сначала выберите клиента.</p>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h3>Отчеты</h3>
+    <div class="row">
+      <form method="get" action="{{ url_for('report_day') }}" class="row">
+        <input type="hidden" name="client_id" value="{{ selected_client_id or '' }}">
+        <label>День:</label>
+        <input name="date" placeholder="YYYY-MM-DD" value="{{ today }}">
+        <button type="submit">Отчет за день</button>
+      </form>
+
+      <form method="get" action="{{ url_for('report_month') }}" class="row">
+        <input type="hidden" name="client_id" value="{{ selected_client_id or '' }}">
+        <label>Месяц:</label>
+        <input name="month" placeholder="YYYY-MM" value="{{ today[:7] }}">
+        <button type="submit">Отчет за месяц</button>
+      </form>
+
+      <form method="get" action="{{ url_for('report_year') }}" class="row">
+        <input type="hidden" name="client_id" value="{{ selected_client_id or '' }}">
+        <label>Год:</label>
+        <input name="year" placeholder="YYYY" value="{{ today[:4] }}">
+        <button type="submit">Отчет за год</button>
+      </form>
+    </div>
+
+    {% if report %}
+      <div class="report">
+        <b>{{ report["title"] }}</b><br>
+        Платежей: {{ report["count"] }}<br>
+        Сумма платежей: {{ report["total_sum"] }} руб.<br>
+        Итог после комиссии: {{ report["total_result"] }} руб.
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h3>Сводные отчеты по всем клиентам</h3>
+    <div class="row">
+      <form method="get" action="{{ url_for('group_report_day') }}" class="row">
+        <input type="hidden" name="client_id" value="{{ selected_client_id or '' }}">
+        <label>День:</label>
+        <input name="date" placeholder="YYYY-MM-DD" value="{{ today }}">
+        <button type="submit">Сводный отчет за день</button>
+      </form>
+
+      <form method="get" action="{{ url_for('group_report_month') }}" class="row">
+        <input type="hidden" name="client_id" value="{{ selected_client_id or '' }}">
+        <label>Месяц:</label>
+        <input name="month" placeholder="YYYY-MM" value="{{ today[:7] }}">
+        <button type="submit">Сводный отчет за месяц</button>
+      </form>
+
+      <form method="get" action="{{ url_for('group_report_year') }}" class="row">
+        <input type="hidden" name="client_id" value="{{ selected_client_id or '' }}">
+        <label>Год:</label>
+        <input name="year" placeholder="YYYY" value="{{ today[:4] }}">
+        <button type="submit">Сводный отчет за год</button>
+      </form>
+    </div>
+
+    {% if group_report %}
+      <div class="report">
+        <b>{{ group_report["title"] }}</b><br>
+        Общая сумма платежей: {{ group_report["total_sum"] }} руб.<br>
+        Общий итог после комиссии: {{ group_report["total_result"] }} руб.
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Клиент</th>
+            <th>Платежей</th>
+            <th>Сумма платежей</th>
+            <th>Итог после комиссии</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in group_report["rows"] %}
+            <tr>
+              <td>{{ row["client_name"] }}</td>
+              <td>{{ row["payment_count"] }}</td>
+              <td>{{ row["total_sum"] }}</td>
+              <td>{{ row["total_result"] }}</td>
+            </tr>
+          {% endfor %}
+          {% if not group_report["rows"] %}
+            <tr><td colspan="4">Нет данных за выбранный период.</td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    {% endif %}
+  </div>
+</body>
+</html>
