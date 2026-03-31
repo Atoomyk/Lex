@@ -4,6 +4,18 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Учет платежей клиентов</title>
+  <script>
+    (function () {
+      const saved = localStorage.getItem("theme");
+      if (saved === "dark" || saved === "light") {
+        document.documentElement.setAttribute("data-theme", saved);
+        return;
+      }
+
+      const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.setAttribute("data-theme", prefersDark ? "dark" : "light");
+    })();
+  </script>
   <style>
     :root {
       --bg: #f3f5f9;
@@ -20,6 +32,22 @@
       --error-border: #f4c4cb;
       --shadow: 0 8px 22px rgba(17, 24, 39, 0.08);
       --radius: 14px;
+    }
+
+    :root[data-theme="dark"] {
+      --bg: #0b1220;
+      --surface: #111827;
+      --surface-soft: #182233;
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --border: #2d3a4f;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --success-bg: #143321;
+      --success-border: #2b5e42;
+      --error-bg: #3a1f25;
+      --error-border: #6d3340;
+      --shadow: 0 10px 24px rgba(2, 6, 23, 0.35);
     }
 
     * { box-sizing: border-box; }
@@ -42,6 +70,7 @@
       align-items: center;
       margin-bottom: 16px;
       padding: 4px 2px;
+      gap: 12px;
     }
 
     .title {
@@ -74,7 +103,7 @@
     .card h3 {
       margin: 0 0 14px;
       font-size: 18px;
-      color: #1a2433;
+      color: var(--text);
     }
 
     .row {
@@ -113,10 +142,11 @@
     input, select, button {
       width: 100%;
       border-radius: 10px;
-      border: 1px solid #cbd5e1;
+      border: 1px solid var(--border);
       padding: 10px 12px;
       font-size: 14px;
-      background: #fff;
+      background: var(--surface);
+      color: var(--text);
       transition: 0.15s ease;
     }
 
@@ -147,11 +177,11 @@
       width: 100%;
       border-collapse: collapse;
       min-width: 720px;
-      background: #fff;
+      background: var(--surface);
     }
 
     th, td {
-      border-bottom: 1px solid #e6ebf3;
+      border-bottom: 1px solid var(--border);
       padding: 10px 12px;
       text-align: left;
       font-size: 14px;
@@ -159,8 +189,8 @@
     }
 
     th {
-      background: #f4f7fc;
-      color: #334155;
+      background: var(--surface-soft);
+      color: var(--text);
       font-weight: 700;
     }
 
@@ -184,12 +214,28 @@
     .err { background: var(--error-bg); border-color: var(--error-border); }
 
     .report {
-      background: #edf3ff;
-      border: 1px solid #cddcff;
+      background: var(--surface-soft);
+      border: 1px solid var(--border);
       border-radius: 10px;
       padding: 12px;
       margin: 10px 0 12px;
       line-height: 1.55;
+    }
+
+    .theme-toggle {
+      width: auto;
+      min-width: 190px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .theme-toggle:hover {
+      background: var(--surface-soft);
     }
 
     .inline-form {
@@ -217,6 +263,12 @@
         grid-template-columns: 1fr;
       }
     }
+
+    @media (max-width: 719px) {
+      .theme-toggle {
+        width: 100%;
+      }
+    }
   </style>
 </head>
 <body>
@@ -226,6 +278,7 @@
         <h1 class="title">Учет платежей клиентов</h1>
         <p class="subtitle">Рабочая панель для добавления платежей и формирования отчетов</p>
       </div>
+      <button id="themeToggle" class="theme-toggle" type="button">Тема</button>
     </header>
 
     {% with msgs = get_flashed_messages(with_categories=true) %}
@@ -472,5 +525,25 @@
       </section>
     </main>
   </div>
+  <script>
+    (function () {
+      const root = document.documentElement;
+      const button = document.getElementById("themeToggle");
+
+      function setButtonText(theme) {
+        button.textContent = theme === "dark" ? "Light" : "Dark";
+      }
+
+      let theme = root.getAttribute("data-theme") || "light";
+      setButtonText(theme);
+
+      button.addEventListener("click", function () {
+        theme = theme === "dark" ? "light" : "dark";
+        root.setAttribute("data-theme", theme);
+        localStorage.setItem("theme", theme);
+        setButtonText(theme);
+      });
+    })();
+  </script>
 </body>
 </html>
