@@ -73,6 +73,34 @@
       gap: 12px;
     }
 
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .logout-form {
+      margin: 0;
+    }
+
+    .logout-btn {
+      width: auto;
+      min-width: 110px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface-soft);
+      color: var(--text);
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .logout-btn:hover {
+      background: var(--surface);
+    }
+
     .title {
       margin: 0;
       font-size: clamp(24px, 3.2vw, 34px);
@@ -265,7 +293,20 @@
     }
 
     @media (max-width: 719px) {
+      .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .header-actions {
+        width: 100%;
+      }
+
       .theme-toggle {
+        width: 100%;
+      }
+
+      .logout-btn {
         width: 100%;
       }
     }
@@ -278,7 +319,12 @@
         <h1 class="title">Учет платежей клиентов</h1>
         <p class="subtitle">Рабочая панель для добавления платежей и формирования отчетов</p>
       </div>
-      <button id="themeToggle" class="theme-toggle" type="button">Тема</button>
+      <div class="header-actions">
+        <button id="themeToggle" class="theme-toggle" type="button">Тема</button>
+        <form class="logout-form" method="post" action="{{ url_for('logout') }}">
+          <button class="logout-btn" type="submit">Выйти</button>
+        </form>
+      </div>
     </header>
 
     {% with msgs = get_flashed_messages(with_categories=true) %}
